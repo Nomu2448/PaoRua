@@ -102,7 +102,7 @@
 
         /* Dashboard */
         .dashboard {
-            display: none;
+            display: block;
             animation: fadeIn 0.8s ease;
         }
 
@@ -406,26 +406,66 @@
     </style>
 </head>
 <body>
-    <!-- Login Form -->
+    <!-- Login/Register Form -->
+    {% if not current_user %}
     <div id="loginContainer" class="login-container">
         <div class="login-form">
-            <h2>🏦 Money Tracker</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="username">ชื่อผู้ใช้</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">รหัสผ่าน</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="btn">เข้าสู่ระบบ</button>
-            </form>
-            <p style="text-align: center; margin-top: 20px; color: #718096; font-size: 14px;">
-                Demo: username = "admin", password = "123456"
-            </p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
+                <button id="tabLogin" class="btn" style="width: 50%;" onclick="showTab('login')">เข้าสู่ระบบ</button>
+                <button id="tabRegister" class="btn" style="width: 50%; background: #38a169;" onclick="showTab('register')">สมัครสมาชิก</button>
+            </div>
+            <div id="formLogin">
+                <h2>🏦 Money Tracker</h2>
+                <form id="loginForm" method="POST" action="/login/">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">ชื่อผู้ใช้</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">รหัสผ่าน</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn">เข้าสู่ระบบ</button>
+                </form>
+                {% if messages %}
+                    <div style="text-align: center; margin-top: 10px;">
+                        {% for message in messages %}
+                            <span style="color: {% if message.tags == 'success' %}#38a169{% else %}#e53e3e{% endif %};">{{ message }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div id="formRegister" style="display: none;">
+                <h2>สมัครสมาชิก</h2>
+                <form id="registerForm" method="POST" action="/register/">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="reg_username">ชื่อผู้ใช้</label>
+                        <input type="text" id="reg_username" name="reg_username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password">รหัสผ่าน</label>
+                        <input type="password" id="reg_password" name="reg_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg_password2">ยืนยันรหัสผ่าน</label>
+                        <input type="password" id="reg_password2" name="reg_password2" required>
+                    </div>
+                    <button type="submit" class="btn" style="background: #38a169;">สมัครสมาชิก</button>
+                </form>
+                {% if messages %}
+                    <div id="registerMsg" style="text-align: center; margin-top: 10px;">
+                        {% for message in messages %}
+                            <span style="color: {% if message.tags == 'success' %}#38a169{% else %}#e53e3e{% endif %};">{{ message }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Dashboard -->
     <div id="dashboard" class="dashboard">
@@ -433,8 +473,8 @@
             <div class="header">
                 <h1>💰 Money Tracker</h1>
                 <div class="user-info">
-                    <span id="welcomeText">สวัสดี, <span id="currentUser"></span></span>
-                    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+                    <span id="welcomeText">สวัสดี, <span id="currentUser">{{ current_user }}</span></span>
+                    <a href="/logout/" class="logout-btn" style="text-decoration:none;">ออกจากระบบ</a>
                 </div>
             </div>
 
@@ -475,8 +515,8 @@
                             <button type="submit" class="add-btn">เพิ่ม</button>
                         </div>
                         <div class="tabs">
-                            <div class="tab active" onclick="setTransactionType('expense')">รายจ่าย</div>
-                            <div class="tab" onclick="setTransactionType('income')">รายรับ</div>
+                            <div class="tab" id="tab-expense" onclick="setTransactionType('expense')">รายจ่าย</div>
+                            <div class="tab" id="tab-income" onclick="setTransactionType('income')">รายรับ</div>
                         </div>
                     </form>
                 </div>
@@ -539,29 +579,57 @@
     <button class="floating-action" onclick="openQuickAdd()">+</button>
 
     <script>
+        // Tab switch for login/register
+        function showTab(tab) {
+            if(tab === 'login') {
+                document.getElementById('formLogin').style.display = '';
+                document.getElementById('formRegister').style.display = 'none';
+                document.getElementById('tabLogin').style.background = '';
+                document.getElementById('tabRegister').style.background = '#38a169';
+            } else {
+                document.getElementById('formLogin').style.display = 'none';
+                document.getElementById('formRegister').style.display = '';
+                document.getElementById('tabLogin').style.background = '#667eea';
+                document.getElementById('tabRegister').style.background = '';
+            }
+        }
+        // Default tab (from Django context)
+        {% if not current_user %}
+            {% if tab %}
+            showTab('{{ tab }}');
+            {% else %}
+            showTab('login');
+            {% endif %}
+        {% else %}
+            window.addEventListener('DOMContentLoaded', function() {
+                initializeCharts();
+                loadTransactions();
+            });
+        {% endif %}
+
+    // Register functionality (AJAX demo, replace with Django backend in production)
+    // document.getElementById('registerForm').addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     const username = document.getElementById('reg_username').value;
+    //     const password = document.getElementById('reg_password').value;
+    //     const password2 = document.getElementById('reg_password2').value;
+    //     const msg = document.getElementById('registerMsg');
+    //     if(password !== password2) {
+    //         msg.textContent = 'รหัสผ่านไม่ตรงกัน';
+    //         return;
+    //     }
+    //     // ส่งข้อมูลไป backend จริงควรใช้ fetch/ajax POST ไปยัง Django
+    //     msg.style.color = '#38a169';
+    //     msg.textContent = 'สมัครสมาชิกสำเร็จ (Demo)';
+    //     setTimeout(() => { showTab('login'); msg.textContent = ''; }, 1500);
+    // });
         let currentUser = '';
         let currentTransactionType = 'expense';
         let transactions = [];
         let monthlyChart = null;
         let categoryChart = null;
 
-        // Login functionality
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (username === 'admin' && password === '123456') {
-                currentUser = username;
-                document.getElementById('loginContainer').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('currentUser').textContent = currentUser;
-                initializeCharts();
-                loadTransactions();
-            } else {
-                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-            }
-        });
+    // ไม่ต้องจัดการ login ด้วย JS แล้ว ใช้ Django backend
 
         function logout() {
             document.getElementById('dashboard').style.display = 'none';
@@ -573,10 +641,18 @@
 
         function setTransactionType(type) {
             currentTransactionType = type;
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
+            document.getElementById('tab-expense').classList.remove('active');
+            document.getElementById('tab-income').classList.remove('active');
+            if (type === 'expense') {
+                document.getElementById('tab-expense').classList.add('active');
+            } else {
+                document.getElementById('tab-income').classList.add('active');
+            }
+            // เปลี่ยนป้ายกำกับปุ่มเพิ่มรายการให้ตรงกับประเภท
+            const addBtn = document.querySelector('.add-btn');
+            if (addBtn) {
+                addBtn.textContent = (type === 'expense') ? 'เพิ่มรายจ่าย' : 'เพิ่มรายรับ';
+            }
         }
 
         function addTransaction() {
@@ -584,7 +660,7 @@
             const amount = parseFloat(document.getElementById('amount').value);
             const category = document.getElementById('category').value;
 
-            if (!description || !amount) {
+            if (!description || isNaN(amount)) {
                 alert('กรุณากรอกข้อมูลให้ครบถ้วน');
                 return;
             }
@@ -592,7 +668,7 @@
             const transaction = {
                 id: Date.now(),
                 description,
-                amount: currentTransactionType === 'expense' ? -amount : amount,
+                amount: currentTransactionType === 'expense' ? -Math.abs(amount) : Math.abs(amount),
                 category,
                 type: currentTransactionType,
                 date: new Date().toLocaleString('th-TH'),
@@ -844,6 +920,12 @@
                 modal.style.display = 'none';
             }
         }
+
+        // ป้องกันการ submit ซ้ำหรือ event ไม่ถูกต้อง
+        const expenseTab = document.querySelector('.tabs .tab:nth-child(1)');
+        const incomeTab = document.querySelector('.tabs .tab:nth-child(2)');
+        if (expenseTab) expenseTab.onclick = function() { setTransactionType('expense'); };
+        if (incomeTab) incomeTab.onclick = function() { setTransactionType('income'); };
     </script>
 </body>
 </html>
