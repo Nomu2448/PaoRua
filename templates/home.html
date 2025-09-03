@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tracker - จัดการการเงินส่วนตัว</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Login Form */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .login-form h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-areas:
+                "add summary recent"
+                "chart chart chart";
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            grid-area: summary;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-card.income {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .summary-card.expense {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .summary-card h4 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .summary-card .amount {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        .form-row input, .form-row select {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .add-btn {
+            background: #38a169;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: #2f855a;
+            transform: translateY(-1px);
+        }
+
+        .transaction-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .transaction-item:hover {
+            background: #f7fafc;
+            transform: translateX(5px);
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-info h5 {
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+
+        .transaction-info small {
+            color: #718096;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .transaction-amount.income {
+            color: #38a169;
+        }
+
+        .transaction-amount.expense {
+            color: #e53e3e;
+        }
+
+        .delete-btn {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: 'Prompt', sans-serif;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1) translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Form -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-form">
+            <h2>🏦 Money Tracker</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn">เข้าสู่ระบบ</button>
+            </form>
+            <p style="text-align: center; margin-top: 20px; color: #718096; font-size: 14px;">
+                Demo: username = "admin", password = "123456"
+            </p>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <div class="container">
+            <div class="header">
+                <h1>💰 Money Tracker</h1>
+                <div class="user-info">
+                    <span id="welcomeText">สวัสดี, <span id="currentUser"></span></span>
+                    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card income">
+                    <h4>รายรับทั้งหมด</h4>
+                    <div class="amount" id="totalIncome">฿0</div>
+                </div>
+                <div class="summary-card expense">
+                    <h4>รายจ่ายทั้งหมด</h4>
+                    <div class="amount" id="totalExpense">฿0</div>
+                </div>
+                <div class="summary-card">
+                    <h4>ยอดคงเหลือ</h4>
+                    <div class="amount" id="balance">฿0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Add Transaction -->
+                <div class="card" style="grid-area: add;">
+                    <h3>📝 เพิ่มรายการใหม่</h3>
+                    <form onsubmit="event.preventDefault(); addTransaction();">
+                        <div class="form-row">
+                            <input type="text" id="description" placeholder="รายละเอียด" required>
+                            <input type="number" id="amount" placeholder="จำนวนเงิน" required style="max-width:120px;">
+                            <select id="category">
+                                <option value="อาหาร">🍜 อาหาร</option>
+                                <option value="เดินทาง">🚗 เดินทาง</option>
+                                <option value="ช้อปปิ้ง">🛒 ช้อปปิ้ง</option>
+                                <option value="บิล">💡 บิล</option>
+                                <option value="บันเทิง">🎬 บันเทิง</option>
+                                <option value="เงินเดือน">💼 เงินเดือน</option>
+                                <option value="รายได้เสริม">💰 รายได้เสริม</option>
+                                <option value="อื่นๆ">📋 อื่นๆ</option>
+                            </select>
+                            <button type="submit" class="add-btn">เพิ่ม</button>
+                        </div>
+                        <div class="tabs">
+                            <div class="tab active" onclick="setTransactionType('expense')">รายจ่าย</div>
+                            <div class="tab" onclick="setTransactionType('income')">รายรับ</div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="card" style="grid-area: recent;">
+                    <h3>📊 รายการล่าสุด</h3>
+                    <div class="transaction-list" id="transactionList">
+                        <p style="text-align: center; color: #718096;">ยังไม่มีรายการ</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="card" style="grid-area: chart; grid-column: 1 / -1;">
+                    <h3>📈 กราฟสรุปรายรับรายจ่าย</h3>
+                    <div class="tabs">
+                        <div class="tab active" onclick="showChart('monthly')">รายเดือน</div>
+                        <div class="tab" onclick="showChart('category')">ตามหมวดหมู่</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                        <canvas id="categoryChart" style="display: none;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div id="quickAddModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeQuickAdd()">&times;</span>
+            <h3>⚡ เพิ่มรายการด่วน</h3>
+            <div style="margin-top: 20px;">
+                <div class="form-group">
+                    <label>รายละเอียด</label>
+                    <input type="text" id="quickDescription" placeholder="เช่น กาแฟเช้า">
+                </div>
+                <div class="form-group">
+                    <label>จำนวนเงิน</label>
+                    <input type="number" id="quickAmount" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <select id="quickCategory">
+                        <option value="อาหาร">🍜 อาหาร</option>
+                        <option value="เดินทาง">🚗 เดินทาง</option>
+                        <option value="ช้อปปิ้ง">🛒 ช้อปปิ้ง</option>
+                        <option value="บิล">💡 บิล</option>
+                        <option value="บันเทิง">🎬 บันเทิง</option>
+                        <option value="อื่นๆ">📋 อื่นๆ</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="addQuickTransaction()">เพิ่มรายการ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="floating-action" onclick="openQuickAdd()">+</button>
+
+    <script>
+        let currentUser = '';
+        let currentTransactionType = 'expense';
+        let transactions = [];
+        let monthlyChart = null;
+        let categoryChart = null;
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === '123456') {
+                currentUser = username;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('currentUser').textContent = currentUser;
+                initializeCharts();
+                loadTransactions();
+            } else {
+                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+            }
+        });
+
+        function logout() {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            currentUser = '';
+        }
+
+        function setTransactionType(type) {
+            currentTransactionType = type;
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function addTransaction() {
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+
+            if (!description || !amount) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now(),
+                description,
+                amount: currentTransactionType === 'expense' ? -amount : amount,
+                category,
+                type: currentTransactionType,
+                date: new Date().toLocaleString('th-TH'),
+                timestamp: new Date()
+            };
+
+            transactions.push(transaction);
+            saveTransactions();
+            updateDisplay();
+            clearForm();
+        }
+
+        function addQuickTransaction() {
+            const description = document.getElementById('quickDescription').value;
+            const amount = parseFloat(document.getElementById('quickAmount').value);
+            const category = document.getElementById('quickCategory').value;
+
+            if (!description || !amount) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now(),
+                description,
+                amount: -amount, // Quick add เป็นรายจ่าย
+                category,
+                type: 'expense',
+                date: new Date().toLocaleString('th-TH'),
+                timestamp: new Date()
+            };
+
+            transactions.push(transaction);
+            saveTransactions();
+            updateDisplay();
+            closeQuickAdd();
+            document.getElementById('quickDescription').value = '';
+            document.getElementById('quickAmount').value = '';
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('คุณต้องการลบรายการนี้หรือไม่?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            updateSummary();
+            updateTransactionList();
+            updateCharts();
+        }
+
+        function updateSummary() {
+            const totalIncome = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+            const totalExpense = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+            const balance = totalIncome - totalExpense;
+
+            document.getElementById('totalIncome').textContent = formatMoney(totalIncome);
+            document.getElementById('totalExpense').textContent = formatMoney(totalExpense);
+            document.getElementById('balance').textContent = formatMoney(balance);
+        }
+
+        function updateTransactionList() {
+            const listElement = document.getElementById('transactionList');
+            if (transactions.length === 0) {
+                listElement.innerHTML = '<p style="text-align: center; color: #718096;">ยังไม่มีรายการ</p>';
+                return;
+            }
+
+            const recentTransactions = transactions.slice(-10).reverse();
+            listElement.innerHTML = recentTransactions.map(transaction => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <h5>${transaction.description}</h5>
+                        <small>${transaction.category} • ${transaction.date}</small>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="transaction-amount ${transaction.type}">
+                            ${formatMoney(Math.abs(transaction.amount))}
+                        </span>
+                        <button class="delete-btn" onclick="deleteTransaction(${transaction.id})">ลบ</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatMoney(amount) {
+            return '฿' + amount.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        function clearForm() {
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+        }
+
+        function saveTransactions() {
+            // จำลองการบันทึกข้อมูล (ในความเป็นจริงควรส่งไปยัง server)
+            console.log('Transactions saved:', transactions);
+        }
+
+        function loadTransactions() {
+            // จำลองการโหลดข้อมูล
+            updateDisplay();
+        }
+
+        function openQuickAdd() {
+            document.getElementById('quickAddModal').style.display = 'block';
+        }
+
+        function closeQuickAdd() {
+            document.getElementById('quickAddModal').style.display = 'none';
+        }
+
+        function initializeCharts() {
+            const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.'],
+                    datasets: [{
+                        label: 'รายรับ',
+                        data: [0, 0, 0, 0, 0, 0],
+                        borderColor: '#38a169',
+                        backgroundColor: 'rgba(56, 161, 105, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'รายจ่าย',
+                        data: [0, 0, 0, 0, 0, 0],
+                        borderColor: '#e53e3e',
+                        backgroundColor: 'rgba(229, 62, 62, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Prompt'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#ff6384',
+                            '#36a2eb',
+                            '#ffce56',
+                            '#4bc0c0',
+                            '#9966ff',
+                            '#ff9f40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Prompt'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            // Update monthly chart with sample data
+            const monthlyData = getMonthlyData();
+            monthlyChart.data.datasets[0].data = monthlyData.income;
+            monthlyChart.data.datasets[1].data = monthlyData.expense;
+            monthlyChart.update();
+
+            // Update category chart
+            const categoryData = getCategoryData();
+            categoryChart.data.labels = categoryData.labels;
+            categoryChart.data.datasets[0].data = categoryData.data;
+            categoryChart.update();
+        }
+
+        function getMonthlyData() {
+            // จำลองข้อมูลรายเดือน
+            const currentMonth = new Date().getMonth();
+            const income = new Array(6).fill(0);
+            const expense = new Array(6).fill(0);
+
+            transactions.forEach(transaction => {
+                const transactionMonth = transaction.timestamp.getMonth();
+                const monthIndex = Math.max(0, Math.min(5, transactionMonth - (currentMonth - 5)));
+                
+                if (transaction.amount > 0) {
+                    income[monthIndex] += transaction.amount;
+                } else {
+                    expense[monthIndex] += Math.abs(transaction.amount);
+                }
+            });
+
+            return { income, expense };
+        }
+
+        function getCategoryData() {
+            const categoryTotals = {};
+            transactions.filter(t => t.amount < 0).forEach(transaction => {
+                categoryTotals[transaction.category] = (categoryTotals[transaction.category] || 0) + Math.abs(transaction.amount);
+            });
+
+            return {
+                labels: Object.keys(categoryTotals),
+                data: Object.values(categoryTotals)
+            };
+        }
+
+        function showChart(type) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (type === 'monthly') {
+                document.getElementById('monthlyChart').style.display = 'block';
+                document.getElementById('categoryChart').style.display = 'none';
+            } else {
+                document.getElementById('monthlyChart').style.display = 'none';
+                document.getElementById('categoryChart').style.display = 'block';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('quickAddModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
