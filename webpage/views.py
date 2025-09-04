@@ -58,4 +58,3 @@ def register(request):
             return redirect('/?tab=login')
     else:
         return redirect('home')
-i
